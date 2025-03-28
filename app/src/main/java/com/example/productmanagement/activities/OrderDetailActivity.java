@@ -1,10 +1,14 @@
 package com.example.productmanagement.activities;
 
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.os.Bundle;
 import android.view.View;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
+import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -30,6 +34,10 @@ public class OrderDetailActivity extends AppCompatActivity {
     private ImageButton backButton;
     private OrderItemAdapter adapter;
     private List<OrderItem> orderItems;
+    private Spinner statusSpinner;
+    private String[] statusOptions = {"Chưa xác nhận", "Xác nhận", "Đang giao", "Hủy đơn"};
+    private String currentStatus;
+    private boolean isEditingStatus = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -70,6 +78,14 @@ public class OrderDetailActivity extends AppCompatActivity {
         // Thiết lập adapter
         adapter = new OrderItemAdapter(this, orderItems);
         orderItemsRecyclerView.setAdapter(adapter);
+
+        // Thiết lập sự kiện click cho trạng thái để chỉnh sửa
+        statusTextView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                showStatusEditOptions();
+            }
+        });
 
         // Thêm nút thêm sản phẩm mới vào OrderDetailActivity
         Button addNewItemButton = findViewById(R.id.add_new_item_button);
@@ -166,7 +182,70 @@ public class OrderDetailActivity extends AppCompatActivity {
         itemCountTextView.setText(orderItems.size() + " Sản phẩm");
         totalTextView.setText(formatPrice(order.getTotal()) + " đ");
         statusTextView.setText(order.getStatus());
+        currentStatus = order.getStatus();
         waitingTimeTextView.setText("2 ngày 4 giờ");
+    }
+
+    private void showStatusEditOptions() {
+        // Tạo AlertDialog để chọn trạng thái
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Chọn trạng thái đơn hàng");
+
+        View view = getLayoutInflater().inflate(R.layout.dialog_status_selection, null);
+        statusSpinner = view.findViewById(R.id.status_spinner);
+
+        // Tạo adapter cho spinner
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(
+                this, android.R.layout.simple_spinner_item, statusOptions);
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        statusSpinner.setAdapter(adapter);
+
+        // Thiết lập trạng thái hiện tại
+        for (int i = 0; i < statusOptions.length; i++) {
+            if (statusOptions[i].equals(currentStatus)) {
+                statusSpinner.setSelection(i);
+                break;
+            }
+        }
+
+        builder.setView(view);
+
+        // Thêm nút xác nhận và hủy
+        builder.setPositiveButton("Xác nhận", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                String newStatus = statusOptions[statusSpinner.getSelectedItemPosition()];
+                updateOrderStatus(newStatus);
+            }
+        });
+
+        builder.setNegativeButton("Hủy", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                dialog.dismiss();
+            }
+        });
+
+        builder.show();
+    }
+
+    private void updateOrderStatus(String newStatus) {
+        // Cập nhật trạng thái đơn hàng
+        currentStatus = newStatus;
+        statusTextView.setText(newStatus);
+
+        // Cập nhật màu sắc cho trạng thái
+        if ("Chưa xác nhận".equals(newStatus)) {
+            statusTextView.setTextColor(getResources().getColor(R.color.status_pending));
+        } else if ("Xác nhận".equals(newStatus)) {
+            statusTextView.setTextColor(getResources().getColor(R.color.status_confirmed));
+        } else if ("Đang giao".equals(newStatus)) {
+            statusTextView.setTextColor(getResources().getColor(R.color.status_shipping));
+        } else if ("Hủy đơn".equals(newStatus)) {
+            statusTextView.setTextColor(getResources().getColor(R.color.status_cancelled));
+        }
+
+        Toast.makeText(this, "Đã cập nhật trạng thái đơn hàng", Toast.LENGTH_SHORT).show();
     }
 
     private String formatPrice(double price) {

@@ -3,21 +3,17 @@ package com.example.productmanagement.activities.customer;
 import android.app.DatePickerDialog;
 import android.os.Bundle;
 import android.view.View;
-import android.widget.ArrayAdapter;
-import android.widget.AutoCompleteTextView;
 import android.widget.DatePicker;
+import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
-import android.widget.Spinner;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.SwitchCompat;
 
 import com.example.productmanagement.R;
-import com.google.android.material.button.MaterialButton;
-import com.google.android.material.textfield.TextInputEditText;
 
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
@@ -26,14 +22,11 @@ import java.util.Locale;
 public class CustomerAddActivity extends AppCompatActivity {
 
     private ImageButton backButton;
-    private TextInputEditText lastNameEditText, firstNameEditText, phoneEditText, emailEditText, birthdayEditText;
-    private TextInputEditText addressEditText, postalCodeEditText;
+    private EditText lastNameEditText, firstNameEditText, phoneEditText, emailEditText, birthdayEditText;
+    private EditText addressEditText, postalCodeEditText, districtAutoComplete, wardAutoComplete;
     private RadioGroup genderRadioGroup;
     private RadioButton maleRadioButton, femaleRadioButton, otherRadioButton;
     private SwitchCompat marketingSwitch;
-    private Spinner countrySpinner;
-    private AutoCompleteTextView districtAutoComplete, wardAutoComplete;
-    private MaterialButton saveButton;
     private Calendar calendar;
     private boolean editMode = false;
     private String customerId = "";
@@ -58,12 +51,13 @@ public class CustomerAddActivity extends AppCompatActivity {
         femaleRadioButton = findViewById(R.id.female_radio_button);
         otherRadioButton = findViewById(R.id.other_radio_button);
         marketingSwitch = findViewById(R.id.marketing_switch);
-        countrySpinner = findViewById(R.id.country_spinner);
         addressEditText = findViewById(R.id.address_edit_text);
         postalCodeEditText = findViewById(R.id.postal_code_edit_text);
         districtAutoComplete = findViewById(R.id.district_auto_complete);
         wardAutoComplete = findViewById(R.id.ward_auto_complete);
-        saveButton = findViewById(R.id.save_button);
+
+        // Tìm nút lưu
+        View saveButton = findViewById(R.id.save_button);
 
         // Kiểm tra xem đang ở chế độ chỉnh sửa hay không
         if (getIntent().hasExtra("edit_mode")) {
@@ -119,15 +113,8 @@ public class CustomerAddActivity extends AppCompatActivity {
             }
         });
 
-        // Thiết lập dữ liệu cho AutoCompleteTextView khu vực
-        String[] districts = {"Quận Cẩm Lệ", "Quận Hải Châu", "Quận Liên Chiểu", "Quận Ngũ Hành Sơn", "Quận Sơn Trà", "Quận Thanh Khê"};
-        ArrayAdapter<String> districtAdapter = new ArrayAdapter<>(this, android.R.layout.simple_dropdown_item_1line, districts);
-        districtAutoComplete.setAdapter(districtAdapter);
-
-        // Thiết lập dữ liệu cho AutoCompleteTextView phường/xã
-        String[] wards = {"Phường Hòa An", "Phường Hòa Phát", "Phường Hòa Thọ Đông", "Phường Hòa Thọ Tây", "Phường Hòa Xuân", "Phường Khuê Trung"};
-        ArrayAdapter<String> wardAdapter = new ArrayAdapter<>(this, android.R.layout.simple_dropdown_item_1line, wards);
-        wardAutoComplete.setAdapter(wardAdapter);
+        // Thiết lập dữ liệu mẫu cho các trường địa chỉ
+        setupAddressFields();
 
         // Thiết lập sự kiện click cho nút lưu
         saveButton.setOnClickListener(new View.OnClickListener() {
@@ -136,6 +123,52 @@ public class CustomerAddActivity extends AppCompatActivity {
                 saveCustomer();
             }
         });
+    }
+
+    private void setupAddressFields() {
+        // Thiết lập dữ liệu mẫu cho trường khu vực
+        districtAutoComplete.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                showDistrictOptions();
+            }
+        });
+
+        // Thiết lập dữ liệu mẫu cho trường phường/xã
+        wardAutoComplete.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                showWardOptions();
+            }
+        });
+    }
+
+    private void showDistrictOptions() {
+        final String[] districts = {"Quận Cẩm Lệ", "Quận Hải Châu", "Quận Liên Chiểu", "Quận Ngũ Hành Sơn", "Quận Sơn Trà", "Quận Thanh Khê"};
+
+        android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(this);
+        builder.setTitle("Chọn khu vực");
+        builder.setItems(districts, new android.content.DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(android.content.DialogInterface dialog, int which) {
+                districtAutoComplete.setText(districts[which]);
+            }
+        });
+        builder.show();
+    }
+
+    private void showWardOptions() {
+        final String[] wards = {"Phường Hòa An", "Phường Hòa Phát", "Phường Hòa Thọ Đông", "Phường Hòa Thọ Tây", "Phường Hòa Xuân", "Phường Khuê Trung"};
+
+        android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(this);
+        builder.setTitle("Chọn phường/xã");
+        builder.setItems(wards, new android.content.DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(android.content.DialogInterface dialog, int which) {
+                wardAutoComplete.setText(wards[which]);
+            }
+        });
+        builder.show();
     }
 
     private void showDatePickerDialog() {
@@ -167,11 +200,38 @@ public class CustomerAddActivity extends AppCompatActivity {
         String email = emailEditText.getText().toString().trim();
         String birthday = birthdayEditText.getText().toString().trim();
         String address = addressEditText.getText().toString().trim();
+        String postalCode = postalCodeEditText.getText().toString().trim();
+        String district = districtAutoComplete.getText().toString().trim();
+        String ward = wardAutoComplete.getText().toString().trim();
 
         // Kiểm tra dữ liệu nhập vào
         if (lastName.isEmpty() || firstName.isEmpty() || phone.isEmpty()) {
             Toast.makeText(this, "Vui lòng nhập đầy đủ thông tin bắt buộc", Toast.LENGTH_SHORT).show();
             return;
+        }
+
+        // Lấy giới tính được chọn
+        String gender = "Khác";
+        int selectedId = genderRadioGroup.getCheckedRadioButtonId();
+        if (selectedId == R.id.male_radio_button) {
+            gender = "Nam";
+        } else if (selectedId == R.id.female_radio_button) {
+            gender = "Nữ";
+        }
+
+        // Lấy trạng thái tiếp thị
+        boolean wantsMarketing = marketingSwitch.isChecked();
+
+        // Tạo địa chỉ đầy đủ
+        String fullAddress = address;
+        if (!ward.isEmpty()) {
+            fullAddress += ", " + ward;
+        }
+        if (!district.isEmpty()) {
+            fullAddress += ", " + district;
+        }
+        if (!postalCode.isEmpty()) {
+            fullAddress += " (" + postalCode + ")";
         }
 
         // Trong thực tế, bạn sẽ lưu khách hàng vào cơ sở dữ liệu ở đây
